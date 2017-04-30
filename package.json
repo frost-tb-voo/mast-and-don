@@ -1,0 +1,24 @@
+{
+  "name": "masto-and-don",
+  "version": "0.0.3",
+  "description": "You can know Masto DON notifications without opening many tabs.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "webpack -d --watch",
+    "build": "webpack --optimize-minimize"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-es2015": "^6.24.1",
+    "exports-loader": "^0.6.4",
+    "webpack": "^1.13.1"
+  },
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "material-design-lite": "^1.3.0",
+    "request": "^2.81.0",
+    "uuid": "^3.0.1"
+  }
+}
