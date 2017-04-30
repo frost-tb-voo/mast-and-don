@@ -1,0 +1,45 @@
+{
+
+  "manifest_version": 2,
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
+  "version": "0.0.3",
+  "default_locale": "en",
+  "icons": {
+    "16": "icons/mastoandon-16.png",
+    "32": "icons/mastoandon-32.png",
+    "48": "icons/mastoandon-48.png"
+  },
+
+  "background": {
+    "scripts": ["background_scripts/index.js"]
+  },
+
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content_scripts/index.js"]
+  }],
+
+  "permissions": [
+    "contextMenus",
+    "http://*/",
+    "https://*/",
+    "<all_urls>",
+    "webRequest",
+    "storage",
+    "notifications",
+    "webRequestBlocking",
+    "tabs",
+    "activeTab"
+  ],
+
+  "web_accessible_resources": ["popup_scripts/index.js"],
+
+  "browser_action": {
+    "default_icon": {
+      "16": "icons/mastoandon-16.png",
+      "32": "icons/mastoandon-32.png",
+      "48": "icons/mastoandon-48.png"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "extensionName": {
+    "message": "Masto and DON",
+    "description": "Name of the extension."
+  },
+
+  "extensionDescription": {
+    "message": "You can know Masto DON notifications without opening many tabs.",
+    "description": "Description of the add-on."
+  },
+
+  "contextMenuItemSelectionLogger": {
+    "message": "Log '%s' to the browser console",
+    "description": "Title of context menu item that logs the selected text when clicked."
+  },
+
+  "notificationTitle": {
+    "message": "Alert notification",
+    "description": "Title of the click notification."
+  },
+
+  "notificationContent": {
+    "message": "Caution! $URL$.",
+    "description": "Tells the user error occurred",
+    "placeholders": {
+      "url" : {
+        "content" : "$1",
+        "example" : "alert message"
+      }
+    }
+  }
+}
