@@ -38,3 +38,9 @@ Before do `web-ext build`, Uncomment `var browser = chrome;` in
 - background-script.js
 - popup-script.js
 - content-script.js
+
+## License
+The files in the repository are provided in MIT License except following files:
+
+- [src/mastodon.js](https://github.com/Kirschn/mastodon.js)
+- [src/uuid](https://github.com/kelektiv/node-uuid)
