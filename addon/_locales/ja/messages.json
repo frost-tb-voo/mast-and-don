@@ -5,7 +5,7 @@
   },
 
   "extensionDescription": {
-    "message": "You can know Masto DON notifications without opening many tabs.",
+    "message": "タブを開かずにマストドンの通知を知ることができるアドオンです. 使い方は Screenshot をご覧ください.",
     "description": "Description of the add-on."
   },
 
