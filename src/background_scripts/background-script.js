@@ -1,14 +1,12 @@
 console.log('load background-script.');
-//var browser = chrome;
+var browser = chrome;
 
 const uuid = require('uuid');
 const MastodonAPI = require('../mastodon.js/mastodon');
 
 function onError(err) {
-  if (err) {
-    console.error(err);
-    notify(err);
-  }
+  console.error(err);
+  notify(err);
 }
 
 function notify(data) {
@@ -30,6 +28,11 @@ function notify(data) {
 var notifications = {};
 
 function notifyMessage(message) {
+  for (var notificationId of Object.keys(notifications)) {
+    browser.notifications.clear(notificationId);
+  }
+  notifications = {};
+
   var notificationId = notifications.length;
   notifications.notificationId = {
     id: notificationId,
@@ -125,40 +128,46 @@ function updateStorage(newCache) {
       }, function () {
         // console.log('Update storage.local ' + JSON.stringify(newCache, null, 2));
         loadStorage().then(function (newCacheList) {
-          // console.log('Sending background update');
           _cacheList = newCacheList;
-          if (browser != chrome) {
-            var sending = browser.runtime.sendMessage({
-              updated: true,
-              cache_list: _cacheList,
-              instances: _instances,
-            });
-            sending.then(resolve, function (err) {
-              if (err == 'Error: Could not establish connection. Receiving end does not exist.') {} else {
-                // console.log(err);
-              }
-              resolve(err);
-            });
-          } else {
-            browser.runtime.sendMessage({
-              updated: true,
-              cache_list: _cacheList,
-              instances: _instances,
-            }, function (message) {
-              if (message) {
-                resolve(message);
-              } else {
-                if (browser.runtime) {
-                  resolve(browser.runtime.lastError);
-                } else {
-                  resolve('');
-                }
-              }
-            });
-          }
-        }).catch(reject);
+          return sendUpdated();
+        }).then(resolve).catch(reject);
       });
     }, reject);
+  });
+}
+
+function sendUpdated() {
+  console.log('Sending background update');
+  return new Promise(function (resolve, reject) {
+    if (browser != chrome) {
+      var sending = browser.runtime.sendMessage({
+        updated: true,
+        cache_list: _cacheList,
+        instances: _instances,
+      });
+      sending.then(resolve, function (err) {
+        if (err == 'Error: Could not establish connection. Receiving end does not exist.') {} else {
+          // console.log(err);
+        }
+        resolve(err);
+      });
+    } else {
+      browser.runtime.sendMessage({
+        updated: true,
+        cache_list: _cacheList,
+        instances: _instances,
+      }, function (message) {
+        if (message) {
+          resolve(message);
+        } else {
+          if (browser.runtime) {
+            resolve(browser.runtime.lastError);
+          } else {
+            resolve('');
+          }
+        }
+      });
+    }
   });
 }
 
@@ -182,7 +191,7 @@ function requestHosts() {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
           var responseText = xhr.responseText;
-          // // console.log(responseText);
+          // console.log(responseText);
           var instanceData = JSON.parse(responseText);
 
           var instances = [];
@@ -190,8 +199,8 @@ function requestHosts() {
             if (!instance.openRegistrations) {
               continue;
             }
-            if (instance.users >= 1000) {
-              // // console.log(JSON.stringify(instance));
+            if (instance.users >= 500) {
+              // console.log(JSON.stringify(instance));
               instances.push(instance);
               continue;
             }
@@ -207,7 +216,7 @@ function requestHosts() {
             if (instance.https_rank != 'A+') {
               continue;
             }
-            // // console.log(JSON.stringify(instance));
+            // console.log(JSON.stringify(instance));
             instances.push(instance);
           }
           instances.sort(function (a, b) {
@@ -227,7 +236,7 @@ function requestHosts() {
       reject(statusText);
     };
     xhr.send(params);
-    // // console.log('/instances.json ' + params);
+    // console.log('/instances.json ' + params);
   });
 }
 
@@ -242,26 +251,20 @@ function openPopup(message, sender, sendResponse) {
   }
   loadStorage().then(function (cacheList) {
     _cacheList = cacheList;
-    if (sendResponse) {
-      sendResponse({
-        cache_list: _cacheList,
-        instances: _instances,
-      });
-    }
+    return sendUpdated();
+  }).then(function () {
+
   }).catch(function (err) {
-    onError(err);
+    onError('#loadStorage ' + err);
   });
   if (_instances.length) {} else {
     requestHosts().then(function (instances) {
       _instances = instances;
-      if (sendResponse) {
-        sendResponse({
-          cache_list: _cacheList,
-          instances: _instances,
-        });
-      }
+      return sendUpdated();
+    }).then(function () {
+
     }).catch(function (err) {
-      onError(err);
+      onError('#requestHosts ' + err);
     });
   }
   // console.log('popup update from background');
@@ -304,36 +307,37 @@ function addNewHost(message, sender, sendResponse) {
     }
 
     if (cache && cache.uuid) {
-      // console.log('update uuid ' + hostname);
+      console.log('update uuid ' + hostname);
       getClientId(hostname).then(function (reservedResult) {
+        console.log(reservedResult);
         var reserved = JSON.parse(reservedResult);
         var client_id = reserved.client_id;
         var uuid = reserved.uuid;
         cache.uuid = uuid;
         updateStorage(cache).then(function () {
           if (!cache.code) {
-            // console.log('code not yet accepted ' + hostname);
+            console.log('code not yet accepted ' + hostname);
             openGetCodePage(hostname, client_id);
           } else {
-            // console.log('code already accepted ' + hostname);
-            getApiKey(hostname, cache.code)
-              .then(function (access_token) {
-                // XXX
-              }).catch(function (err) {
-                onError(err);
-                // invalid uuid
-                cache.uuid = '';
-                updateStorage(cache).then().catch();
-              });
+            console.log('code already accepted ' + hostname);
+            getApiKey(hostname, cache.code).then(function (access_token) {
+              // XXX
+            }).catch(function (err) {
+              onError('#getApiKey ' + err);
+              // invalid uuid
+              cache.uuid = '';
+              updateStorage(cache).then().catch();
+            });
           }
         }).catch(function (err) {
-          onError(err);
+          onError('#updateStorage ' + err);
         });
       }).catch(function (err) {
-        onError(err);
+        onError('#getClientId ' + err);
+        postRevoke(hostname);
       });
     } else {
-      // console.log('not yet reserved ' + hostname);
+      console.log('not yet reserved ' + hostname);
       getClientId(hostname).then(function (reservedResult) {
         // console.log(reservedResult);
         var reserved = JSON.parse(reservedResult);
@@ -345,14 +349,15 @@ function addNewHost(message, sender, sendResponse) {
         }).then(function () {
           openGetCodePage(hostname, client_id);
         }).catch(function (err) {
-          onError(err);
+          onError('#updateStorage ' + err);
         });
       }).catch(function (err) {
-        onError(err);
+        onError('#getClientId ' + err);
+        postRevoke(hostname);
       });
     }
   }).catch(function (err) {
-    onError(err);
+    onError('#getCache ' + err);
   });
 }
 
@@ -516,49 +521,47 @@ function receiveUserCode(message, sender, sendResponse) {
   // console.log('receiveUserCode ' + JSON.stringify(message, null, 2));
   var hostname = message.hostname;
   var code = message.code;
-  getApiKey(hostname, code)
-    .then(function (access_token) {
-      // XXX
-    }).catch(function (err) {
-      onError(err + ', and retry now.');
-      // invalid uuid
-      updateStorage({
-        hostname: hostname,
-        code: code
-      }).then(function () {
-        // retry, update uuid
-        getClientId(hostname)
-          .then(function (reservedResult) {
-            var reserved = JSON.parse(reservedResult);
-            var client_id = reserved.client_id;
-            var uuid = reserved.uuid;
-            updateStorage({
-              hostname: hostname,
-              uuid: uuid,
-              code: code
-            }).then(function () {
-              // get access_token
-              getApiKey(hostname, code)
-                .then(function (access_token) {
-                  // XXX
-                }).catch(function (err) {
-                  onError(err);
-                  // invalid uuid
-                  updateStorage({
-                    hostname: hostname,
-                    code: code
-                  }).then().catch();
-                });
+  getApiKey(hostname, code).then(function (access_token) {
+    // XXX
+  }).catch(function (err) {
+    onError(err + ', and retry now.');
+    // invalid uuid
+    updateStorage({
+      hostname: hostname,
+      code: code
+    }).then(function () {
+      // retry, update uuid
+      getClientId(hostname).then(function (reservedResult) {
+        var reserved = JSON.parse(reservedResult);
+        var client_id = reserved.client_id;
+        var uuid = reserved.uuid;
+        updateStorage({
+          hostname: hostname,
+          uuid: uuid,
+          code: code
+        }).then(function () {
+          // get access_token
+          getApiKey(hostname, code)
+            .then(function (access_token) {
+              // XXX
             }).catch(function (err) {
-              onError(err);
+              onError('#getApiKey ' + err);
+              // invalid uuid
+              updateStorage({
+                hostname: hostname,
+                code: code
+              }).then().catch();
             });
-          }).catch(function (err) {
-            onError(err);
-          });
+        }).catch(function (err) {
+          onError('#updateStorage ' + err);
+        });
       }).catch(function (err) {
-        onError(err);
+        onError('#getClientId ' + err);
       });
+    }).catch(function (err) {
+      onError('#updateStorage ' + err);
     });
+  });
 }
 
 browser.runtime.onMessage.addListener(receiveUserCode);
@@ -566,15 +569,17 @@ browser.runtime.onMessage.addListener(receiveUserCode);
 
 
 var pollingIndex = 0;
+var timerId;
 
 function pollingScheduler() {
-  // console.log('Polling start.');
+  console.log('Polling task start.');
   loadStorage().then(function (cacheList) {
     var messageQueue = [];
     Promise.all(cacheList.map(function (cache) {
       var hostname = cache.hostname;
       if (!cache.access_token) {
-        return;
+        console.log('no access_token ' + hostname);
+        return '';
       }
       return new Promise(function (resolve, reject) {
         var messagesForHost = [];
@@ -601,7 +606,7 @@ function pollingScheduler() {
             return GET_timelines_public(hostname);
           })
           .then(function (messages) {
-            //// console.log(JSON.stringify(messages) + ' from GET_timelines_public');
+            // console.log(JSON.stringify(messages) + ' from GET_timelines_public');
             for (var message of messages) {
               messagesForHost.push(message);
             }
@@ -609,12 +614,13 @@ function pollingScheduler() {
               // console.log('queue content length = ' + messagesForHost.length);
               messageQueue.push(messagesForHost);
             }
-            resolve();
+            resolve('');
           }).catch(reject);
       });
-    })).then(function () {
+    })).then(function (values) {
+      console.log('Polling task end.');
       if (messageQueue.length) {
-        // console.log('queue = ' + messageQueue.length);
+        console.log('queue = ' + messageQueue.length);
         if (pollingIndex >= messageQueue.length) {
           pollingIndex = 0;
         }
@@ -626,14 +632,25 @@ function pollingScheduler() {
         }
         pollingIndex++;
       }
-      setTimeout(pollingScheduler, 20000);
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+      timerId = setTimeout(pollingScheduler, 20000);
     }).catch(function (err) {
-      onError(err);
-      setTimeout(pollingScheduler, 20000);
+      onError('Promise#all ' + err);
+      console.log('Polling task end with err.');
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+      timerId = setTimeout(pollingScheduler, 20000);
     });
   }).catch(function (err) {
-    onError(err);
-    setTimeout(pollingScheduler, 20000);
+    onError('#loadStorage ' + err);
+    console.log('Polling task end with err.');
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+    timerId = setTimeout(pollingScheduler, 20000);
   });
 }
 pollingScheduler();
@@ -671,7 +688,7 @@ function GET_follow_requests(hostname) {
         }
         var unread = [];
         for (var account of data) {
-          //// console.log(JSON.stringify(twoot, null, 2));
+          // console.log(JSON.stringify(toot, null, 2));
           var sameOne;
           for (var follow_request of cache.follow_requests) {
             if (account.acct == follower.acct) {
@@ -699,9 +716,14 @@ function GET_follow_requests(hostname) {
           if (account.note) {
             note = account.note;
           }
+
+          var created_at_zone = new Date(created_at);
+          var month = created_at_zone.getMonth() + 1;
+          var created_at_string = month + '/' + created_at_zone.getDate() + ' ' + created_at_zone.getHours() + ':' + created_at_zone.getMinutes();
+
           var message = {
             title: unread.length + ' follow_requests in ' + hostname + '!',
-            message: created_at + ' : ' + display_name + '(' + username + ') :\n' + note,
+            message: created_at_string + ' ' + display_name + '(' + username + ') :\n' + note,
             link_url: 'https://' + hostname + '/web/follow_requests',
             icon: avatar
           };
@@ -750,7 +772,7 @@ function GET_notifications(hostname) {
         // you don't have to supply the parameters, you can also just go with .get(endpoint, callback)
         var unread = [];
         for (var notification of data) {
-          //// console.log(JSON.stringify(twoot, null, 2));
+          // console.log(JSON.stringify(toot, null, 2));
           var id = notification.id;
           if (cache.lastNotification && id <= cache.lastNotification) {
             break; // TODO
@@ -773,9 +795,13 @@ function GET_notifications(hostname) {
           var type = notification.type;
           var status = notification.status;
 
+          var created_at_zone = new Date(created_at);
+          var month = created_at_zone.getMonth() + 1;
+          var created_at_string = month + '/' + created_at_zone.getDate() + ' ' + created_at_zone.getHours() + ':' + created_at_zone.getMinutes();
+
           var message = {
             title: unread.length + ' notifications in ' + hostname + '!',
-            message: created_at + ' : ' + display_name + '(' + username + ') :\n' + type,
+            message: created_at_string + ' ' + display_name + '(' + username + ') :\n' + type,
             link_url: 'https://' + hostname + '/web/notifications',
             icon: avatar
           };
@@ -826,13 +852,13 @@ function GET_timelines_home(hostname) {
         // you don't have to supply the parameters, you can also just go with .get(endpoint, callback)
 
         var unread = [];
-        for (var twoot of data) {
-          //// console.log(JSON.stringify(twoot, null, 2));
-          var id = twoot.id;
+        for (var toot of data) {
+          // console.log(JSON.stringify(toot, null, 2));
+          var id = toot.id;
           if (cache.lastHome && id <= cache.lastHome) {
             break;
           }
-          unread.push(twoot);
+          unread.push(toot);
         }
         if (!unread.length) {
           // empty
@@ -840,28 +866,55 @@ function GET_timelines_home(hostname) {
           return;
         }
 
+        unread.sort(function (a, b) {
+          if (a.reblogs_count < b.reblogs_count) return 10;
+          if (a.reblogs_count > b.reblogs_count) return -10;
+          if (a.favourites_count < b.favourites_count) return 1;
+          if (a.favourites_count > b.favourites_count) return -1;
+          return 0;
+        });
+
         var doc = document.implementation.createHTMLDocument("");
         var dom = doc.createElement('html');
-        for (var twoot of unread) {
-          var created_at = twoot.created_at;
-          var display_name = twoot.account.display_name;
-          var username = twoot.account.username;
-          var avatar = twoot.account.avatar;
+        for (var toot of unread) {
+          var created_at = toot.created_at;
+          var display_name = toot.account.display_name;
+          var username = toot.account.username;
+          var avatar = toot.account.avatar;
+          var reblogs_count = toot.reblogs_count;
+          var favourites_count = toot.favourites_count;
 
-          dom.innerHTML = twoot.content;
+          var created_at_zone = new Date(created_at);
+          var month = created_at_zone.getMonth() + 1;
+          var created_at_string = month + '/' + created_at_zone.getDate() + ' ' + created_at_zone.getHours() + ':' + created_at_zone.getMinutes();
+
+          dom.innerHTML = toot.content;
           var content = dom.textContent;
 
-          var message = {
-            title: unread.length + ' home twoots in ' + hostname + '!',
-            message: created_at + ' : ' + display_name + '(' + username + ') :\n' + content,
-            link_url: 'https://' + hostname + '/web/timelines/home',
+          var message = created_at_string + ' ' + display_name + '(' + username + ')';
+          if (reblogs_count) {
+            //message += '\n:arrows_counterclockwise: ' + reblogs_count;
+            message += ' :RT:' + reblogs_count;
+            // message += ' ↩' + reblogs_count;
+          }
+          if (favourites_count) {
+            //message += '\n:star: ' + favourites_count;
+            message += ' :fav:' + favourites_count;
+            // message += ' ⭐' + favourites_count;
+          }
+          message += '\n' + content
+
+          var messageBoard = {
+            title: unread.length + ' home toots in ' + hostname + '!',
+            message: message,
+            link_url: 'https://' + hostname + '/web/timelines/public',
             icon: avatar
           };
-          messages.push(message);
+          messages.push(messageBoard);
         }
-        for (var twoot of unread) {
-          // console.log('timelines/home ' + JSON.stringify(twoot, null, 2));
-          var id = twoot.id;
+        for (var toot of unread) {
+          // console.log('timelines/home ' + JSON.stringify(toot, null, 2));
+          var id = toot.id;
           cache.lastHome = id;
           updateStorage(cache).then(function () {
             resolve(messages);
@@ -905,13 +958,13 @@ function GET_timelines_public(hostname) {
         // you don't have to supply the parameters, you can also just go with .get(endpoint, callback)
 
         var unread = [];
-        for (var twoot of data) {
-          //// console.log(JSON.stringify(twoot, null, 2));
-          var id = twoot.id;
+        for (var toot of data) {
+          // console.log(JSON.stringify(toot, null, 2));
+          var id = toot.id;
           if (cache.lastPublic && id <= cache.lastPublic) {
             break;
           }
-          unread.push(twoot);
+          unread.push(toot);
         }
         if (!unread.length) {
           // empty
@@ -919,28 +972,57 @@ function GET_timelines_public(hostname) {
           return;
         }
 
+        unread.sort(function (a, b) {
+          if (a.reblogs_count < b.reblogs_count) return 10;
+          if (a.reblogs_count > b.reblogs_count) return -10;
+          if (a.favourites_count < b.favourites_count) return 1;
+          if (a.favourites_count > b.favourites_count) return -1;
+          return 0;
+        });
+
         var doc = document.implementation.createHTMLDocument("");
         var dom = doc.createElement('html');
-        for (var twoot of unread) {
-          var created_at = twoot.created_at;
-          var display_name = twoot.account.display_name;
-          var username = twoot.account.username;
-          var avatar = twoot.account.avatar;
+        for (var toot of unread) {
+          var created_at = toot.created_at;
+          var display_name = toot.account.display_name;
+          var username = toot.account.username;
+          var avatar = toot.account.avatar;
+          var reblogs_count = toot.reblogs_count;
+          var favourites_count = toot.favourites_count;
+          var account_id = toot.account.id;
+          var account_url = toot.account.url;
 
-          dom.innerHTML = twoot.content;
+          var created_at_zone = new Date(created_at);
+          var month = created_at_zone.getMonth() + 1;
+          var created_at_string = month + '/' + created_at_zone.getDate() + ' ' + created_at_zone.getHours() + ':' + created_at_zone.getMinutes();
+
+          dom.innerHTML = toot.content;
           var content = dom.textContent;
 
-          var message = {
-            title: unread.length + ' public twoots in ' + hostname + '!',
-            message: created_at + ' : ' + display_name + '(' + username + ') :\n' + content,
-            link_url: 'https://' + hostname + '/web/timelines/public',
+          var message = created_at_string + ' ' + display_name + '(' + username + ')';
+          if (reblogs_count) {
+            //message += '\n:arrows_counterclockwise: ' + reblogs_count;
+            message += ' :RT:' + reblogs_count;
+            // message += ' ↩' + reblogs_count;
+          }
+          if (favourites_count) {
+            //message += '\n:star: ' + favourites_count;
+            message += ' :fav:' + favourites_count;
+            // message += ' ⭐' + favourites_count;
+          }
+          message += '\n' + content
+
+          var messageBoard = {
+            title: unread.length + ' public toots in ' + hostname + '!',
+            message: message,
+            link_url: 'https://' + hostname + '/web/accounts/' + account_id,
             icon: avatar
           };
-          messages.push(message);
+          messages.push(messageBoard);
         }
-        for (var twoot of unread) {
-          //// console.log('timelines/public ' + JSON.stringify(twoot, null, 2));
-          var id = twoot.id;
+        for (var toot of unread) {
+          // console.log('timelines/public ' + JSON.stringify(toot, null, 2));
+          var id = toot.id;
           cache.lastPublic = id;
           updateStorage(cache).then(function () {
             resolve(messages);
@@ -996,10 +1078,10 @@ function switchNotification(message, sender, sendResponse) {
     updateStorage(cache).then(function () {
       // XXX
     }).catch(function (err) {
-      onError(err);
+      onError('#updateStorage ' + err);
     });
   }).catch(function (err) {
-    onError(err);
+    onError('#getCache ' + err);
   });
 }
 
