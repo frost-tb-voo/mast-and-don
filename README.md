@@ -27,7 +27,7 @@ mastodon の認証終了後, アドオンから通知が表示されます. そ�
 - Install npm.
 - Install webpack and web-ext.
 - `npm install`
-- `npm build`
+- `npm run build`
 - Change your directory to `addon`
 - `web-ext build`.
 
