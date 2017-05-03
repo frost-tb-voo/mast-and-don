@@ -1,11 +1,11 @@
 console.log('load popup-script.');
-//var browser = chrome;
-
-require('material-design-lite');
+var browser = chrome;
 
 function onFailed(error) {
   console.error(error);
 }
+
+// TODO /authorize_follow?acct=
 
 function addNewHost(event) {
   event.preventDefault();
@@ -14,7 +14,7 @@ function addNewHost(event) {
   while ((target.tagName != "BUTTON" || !target.getAttribute('hostname')) && target.parentNode) {
     target = target.parentNode;
   }
-  //// console.log(target);
+  // console.log(target);
   if (target.tagName != "BUTTON")
     return;
 
@@ -22,7 +22,7 @@ function addNewHost(event) {
   if (!hostname) {
     return;
   }
-  // console.log("popup script sending message " + event.type);
+  console.log("popup script sending message " + event.type);
 
   if (browser != chrome) {
     var sending = browser.runtime.sendMessage({
@@ -53,12 +53,12 @@ function deleteHost(event) {
   while ((target.tagName != "BUTTON" || !target.getAttribute('hostname')) && target.parentNode) {
     target = target.parentNode;
   }
-  //// console.log(target);
+  // console.log(target);
   if (target.tagName != "BUTTON")
     return;
 
   var hostname = target.getAttribute('hostname');
-  // console.log("popup script sending message " + event.type);
+  console.log("popup script sending message " + event.type);
 
   if (browser != chrome) {
     var sending = browser.runtime.sendMessage({
@@ -88,14 +88,14 @@ function switchNotification(event) {
   while ((target.tagName != "INPUT" || !target.getAttribute('id') || !target.getAttribute('hostname')) && target.parentNode) {
     target = target.parentNode;
   }
-  //// console.log(target);
+  // console.log(target);
   if (target.tagName != "INPUT")
     return;
 
   var id = target.getAttribute('id');
   var hostname = target.getAttribute('hostname');
   var checked = target.checked;
-  // console.log("popup script sending message " + id + ' -> ' + checked + ' for ' + hostname);
+  console.log("popup script sending message " + id + ' -> ' + checked + ' for ' + hostname);
 
   if (browser != chrome) {
     var sending = browser.runtime.sendMessage({
@@ -297,7 +297,7 @@ function onReceived(message) {
     return;
   }
   // console.log('receive to popup ' + JSON.stringify(message, null, 2));
-  //// console.log('receive to popup');
+  // console.log('receive to popup');
 
   let width = window.innerWidth;
   let height = window.innerHeight;
@@ -310,8 +310,9 @@ function onReceived(message) {
   selectDiv.setAttribute('class', 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp');
   fragment.appendChild(selectDiv);
 
-  var thead = document.createElement('thead');
-  if (thead) {
+  var thead;
+  if (!thead) {
+    thead = document.createElement('thead');
     var thead_tr = document.createElement('tr');
 
     var th_status = document.createElement('th');
@@ -358,14 +359,14 @@ function onReceived(message) {
     thead_tr.appendChild(th_swpublic);
 
     thead.appendChild(thead_tr);
-    selectDiv.appendChild(thead);
   }
+  selectDiv.appendChild(thead);
 
   var select = document.createElement('tbody');
   selectDiv.appendChild(select);
 
   for (var cache of message.cache_list) {
-    //// console.log(JSON.stringify(cache, null, 2));
+    // console.log(JSON.stringify(cache, null, 2));
     if (!cache.access_token) {
       continue;
     }
@@ -391,10 +392,9 @@ function onReceived(message) {
   }
 
   var body = document.getElementById('id_body');
-  //// console.log(body);
   var body_content = document.getElementById('id_body_content');
   if (body_content) {
-    // console.log('update id_body_content');
+    removeChild(body_content);
     body.removeChild(body_content);
   }
   body_content = document.createElement('div');
@@ -415,11 +415,24 @@ function onReceived(message) {
   componentHandler.upgradeDom();
 }
 
+function removeChild(dom) {
+  for (var child of dom.childNodes) {
+    removeChild(child);
+    child.removeEventListener('click', addNewHost, true);
+    child.removeEventListener('onclick', addNewHost, true);
+    child.removeEventListener('click', deleteHost, true);
+    child.removeEventListener('onclick', deleteHost, true);
+    child.removeEventListener('change', switchNotification, true);
+    dom.removeChild(child);
+    child.innerHTML = "";
+  }
+}
+
 function receiveUpdate(message, sender, sendResponse) {
   if (!message.updated) {
     return;
   }
-  // console.log('Receive background update');
+  console.log('Receive background update');
   onReceived(message);
 }
 
