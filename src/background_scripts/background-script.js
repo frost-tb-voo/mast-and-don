@@ -196,12 +196,12 @@ function requestHosts() {
 
           var instances = [];
           for (var instance of instanceData) {
-            if (!instance.openRegistrations) {
-              continue;
-            }
             if (instance.users >= 500) {
               // console.log(JSON.stringify(instance));
               instances.push(instance);
+              continue;
+            }
+            if (!instance.openRegistrations) {
               continue;
             }
             if (instance.users < 10) {
