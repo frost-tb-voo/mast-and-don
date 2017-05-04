@@ -1,6 +1,6 @@
 {
   "name": "masto-and-don",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "You can know Masto DON notifications without opening many tabs.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
