@@ -31,9 +31,17 @@ mastodon の認証終了後, アドオンから通知が表示されます. そ�
 - Change your directory to `addon`
 - `web-ext build`.
 
+### firefox extension
+
+Before do `web-ext build`, comment out `var browser = chrome;` in
+
+- background-script.js
+- popup-script.js
+- content-script.js
+
 ### google chrome extension
 
-Before do `web-ext build`, Uncomment `var browser = chrome;` in
+Before do `web-ext build`, uncomment `var browser = chrome;` in
 
 - background-script.js
 - popup-script.js
