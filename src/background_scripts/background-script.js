@@ -731,6 +731,10 @@ function GET_follow_requests(hostname) {
         }
         for (var account of unread) {
           // console.log('follow_requests ' + JSON.stringify(account, null, 2));
+          if (!cache.countFollowRequests) {
+            cache.countFollowRequests = 0;
+          }
+          cache.countFollowRequests += unread.length - 0;
           cache.follow_requests.push(account.acct);
         }
         updateStorage(cache).then(function () {
@@ -810,6 +814,10 @@ function GET_notifications(hostname) {
         for (var notification of unread) {
           // console.log('notifications ' + JSON.stringify(notification, null, 2));
           var id = notification.id;
+          if (!cache.countNotifications) {
+            cache.countNotifications = 0;
+          }
+          cache.countNotifications += unread.length - 0;
           cache.lastNotification = id;
           updateStorage(cache).then(function () {
             resolve(messages);
@@ -915,6 +923,10 @@ function GET_timelines_home(hostname) {
         for (var toot of unread) {
           // console.log('timelines/home ' + JSON.stringify(toot, null, 2));
           var id = toot.id;
+          if (!cache.countHome) {
+            cache.countHome = 0;
+          }
+          cache.countHome += unread.length - 0;
           cache.lastHome = id;
           updateStorage(cache).then(function () {
             resolve(messages);
@@ -939,9 +951,10 @@ function GET_timelines_public(hostname) {
         return;
       }
       if (!cache.access_token) {
-        notify('token not found for ' + hostname);
-        resolve(messages);
-        return;
+        // XXX public api
+        // notify('token not found for ' + hostname);
+        // resolve(messages);
+        // return;
       }
       if (cache.offPublic) {
         // console.log('Skip GET_timelines_public');
@@ -1023,12 +1036,14 @@ function GET_timelines_public(hostname) {
         for (var toot of unread) {
           // console.log('timelines/public ' + JSON.stringify(toot, null, 2));
           var id = toot.id;
+          if (!cache.countPublic) {
+            cache.countPublic = 0;
+          }
+          cache.countPublic += unread.length - 0;
           cache.lastPublic = id;
           updateStorage(cache).then(function () {
             resolve(messages);
-          }).catch(function (err) {
-            reject(err);
-          });
+          }).catch(reject);
           break;
         }
       });
@@ -1075,9 +1090,7 @@ function switchNotification(message, sender, sendResponse) {
     if (target.startsWith('public_')) {
       cache.offPublic = !checked;
     }
-    updateStorage(cache).then(function () {
-      // XXX
-    }).catch(function (err) {
+    updateStorage(cache).then().catch(function (err) {
       onError('#updateStorage ' + err);
     });
   }).catch(function (err) {
@@ -1086,3 +1099,44 @@ function switchNotification(message, sender, sendResponse) {
 }
 
 browser.runtime.onMessage.addListener(switchNotification);
+
+
+
+function receiveConfirmedHost(message, sender, sendResponse) {
+  if (!message.confirm) {
+    return;
+  }
+  var hostname = message.hostname;
+  var page = message.page;
+
+  getCache(hostname).then(function (cache) {
+    var updated = false;
+    if (page == '/web/getting_started' ||
+      page == '/web/timelines/public' ||
+      page == '/web/timelines/public/local') {
+      updated |= (cache.countFollowRequests > 0);
+      cache.countFollowRequests = 0;
+      updated |= (cache.countNotifications > 0);
+      cache.countNotifications = 0;
+      updated |= (cache.countHome > 0);
+      cache.countHome = 0;
+      updated |= (cache.countPublic > 0);
+      cache.countPublic = 0;
+    }
+    if (page == '/web/follow_requests' ||
+      page == '/web/notifications' ||
+      page == '/web/timelines/home') {
+      updated |= (cache.countFollowRequests > 0);
+      cache.countFollowRequests = 0;
+      updated |= (cache.countNotifications > 0);
+      cache.countNotifications = 0;
+      updated |= (cache.countHome > 0);
+      cache.countHome = 0;
+    }
+    if (updated) {
+      updateStorage(cache).then().catch(onError);
+    }
+  });
+}
+
+browser.runtime.onMessage.addListener(receiveConfirmedHost);

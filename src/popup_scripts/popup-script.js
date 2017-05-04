@@ -125,6 +125,12 @@ function switchNotification(event) {
   }
 }
 
+var iconsStatus = {};
+var badgesFollowRequests = {};
+var badgesNotifications = {};
+var badgesHome = {};
+var badgesPublic = {};
+
 function createCol(hostname, instance, cache) {
   var tr = document.createElement('tr');
 
@@ -139,6 +145,7 @@ function createCol(hostname, instance, cache) {
   }
   instance_up.appendChild(up_icon);
   tr.appendChild(instance_up);
+  iconsStatus[hostname] = up_icon;
 
   var instance_name = document.createElement('td');
   instance_name.setAttribute('class', 'mdl-data-table__cell--non-numeric');
@@ -173,6 +180,12 @@ function createCol(hostname, instance, cache) {
   var followRequests_sw = document.createElement('td');
   followRequests_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+    badge.setAttribute('data-badge', '0');
+    followRequests_sw.appendChild(badge);
+    badgesFollowRequests[hostname] = badge;
+
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'follow_requests_' + hostname);
@@ -193,13 +206,14 @@ function createCol(hostname, instance, cache) {
   }
   tr.appendChild(followRequests_sw);
 
-  var notification_sw = document.createElement('td');
-  notification_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
+  var notifications_sw = document.createElement('td');
+  notifications_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
-    // var span = document.createElement('span');
-    // span.setAttribute('class', 'mdl-badge mdl-badge--overlap');
-    // span.setAttribute('data-badge', '1');
-    // notification_sw.appendChild(span);
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+    badge.setAttribute('data-badge', '0');
+    notifications_sw.appendChild(badge);
+    badgesNotifications[hostname] = badge;
 
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
@@ -217,13 +231,19 @@ function createCol(hostname, instance, cache) {
     var span = document.createElement('span');
     span.setAttribute('class', 'mdl-switch__label');
     label.appendChild(span);
-    notification_sw.appendChild(label);
+    notifications_sw.appendChild(label);
   }
-  tr.appendChild(notification_sw);
+  tr.appendChild(notifications_sw);
 
   var home_sw = document.createElement('td');
   home_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+    badge.setAttribute('data-badge', '0');
+    home_sw.appendChild(badge);
+    badgesHome[hostname] = badge;
+
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'home_' + hostname);
@@ -247,6 +267,12 @@ function createCol(hostname, instance, cache) {
   var public_sw = document.createElement('td');
   public_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+    badge.setAttribute('data-badge', '0');
+    public_sw.appendChild(badge);
+    badgesPublic[hostname] = badge;
+
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'public_' + hostname);
@@ -396,7 +422,7 @@ function onReceived(message) {
 
   for (var cache of message.cache_list) {
     // registered by user
-    if (!cache.access_token) {
+    if (!cache.access_token && !cache.lastPublic) {
       continue;
     }
     var instance = false;
@@ -417,6 +443,63 @@ function onReceived(message) {
       if (!tr.firstChild.getAttribute('class')) {
         removeChild(tr.firstChild);
         tr.removeChild(tr.firstChild);
+      }
+      var up_icon = iconsStatus[hostname];
+      if (instance && instance.up) {
+        if (up_icon.textContent != 'event_available') {
+          up_icon.textContent = 'event_available';
+        }
+      } else {
+        if (up_icon.textContent != 'event_busy') {
+          up_icon.textContent = 'event_busy';
+        }
+      }
+      var countFollowRequests = cache.countFollowRequests;
+      if (!countFollowRequests) {
+        countFollowRequests = 0
+      }
+      if (countFollowRequests > 20) {
+        countFollowRequests = '20+';
+      }
+      var badgeFollowRequests = badgesFollowRequests[hostname];
+      if (badgeFollowRequests.getAttribute('data-badge') != countFollowRequests) {
+        badgeFollowRequests.setAttribute('data-badge', countFollowRequests);
+      }
+
+      var countNotifications = cache.countNotifications;
+      if (!countNotifications) {
+        countNotifications = 0
+      }
+      if (countNotifications > 20) {
+        countNotifications = '20+';
+      }
+      var badgeNotifications = badgesNotifications[hostname];
+      if (badgeNotifications.getAttribute('data-badge') != countNotifications) {
+        badgeNotifications.setAttribute('data-badge', countNotifications);
+      }
+
+      var countHome = cache.countHome;
+      if (!countHome) {
+        countHome = 0
+      }
+      if (countHome > 20) {
+        countHome = '20+';
+      }
+      var badgeHome = badgesHome[hostname];
+      if (badgeHome.getAttribute('data-badge') != countHome) {
+        badgeHome.setAttribute('data-badge', countHome);
+      }
+
+      var countPublic = cache.countPublic;
+      if (!countPublic) {
+        countPublic = 0
+      }
+      if (countPublic > 20) {
+        countPublic = '20+';
+      }
+      var badgePublic = badgesPublic[hostname];
+      if (badgePublic.getAttribute('data-badge') != countPublic) {
+        badgePublic.setAttribute('data-badge', countPublic);
       }
     }
     tbody.appendChild(tr);
@@ -466,6 +549,7 @@ function removeChild(dom) {
     child.removeEventListener('change', switchNotification, true);
     dom.removeChild(child);
     child.innerHTML = "";
+    child.remove();
   }
 }
 
