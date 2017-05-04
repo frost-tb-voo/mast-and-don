@@ -43,4 +43,5 @@ Before do `web-ext build`, Uncomment `var browser = chrome;` in
 The files in the repository are provided in MIT License except following files:
 
 - [src/mastodon.js](https://github.com/Kirschn/mastodon.js)
+- [src/mastodon.js/jquery.min.js](https://jquery.com)
 - [src/uuid](https://github.com/kelektiv/node-uuid)

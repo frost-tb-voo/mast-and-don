@@ -2,7 +2,9 @@ console.log('load popup-script.');
 var browser = chrome;
 
 function onFailed(error) {
-  console.error(error);
+  if (error) {
+    console.error(error);
+  }
 }
 
 // TODO /authorize_follow?acct=
@@ -268,20 +270,27 @@ function createCol(hostname, instance, cache) {
   var td = document.createElement('td');
   td.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   var new_button = document.createElement('button');
-  if (instance && instance.up) {} else {
-    new_button.setAttribute('disabled', true);
-  }
   var func_icon = document.createElement('i');
   func_icon.setAttribute('class', 'material-icons');
   new_button.appendChild(func_icon);
   new_button.setAttribute('hostname', hostname);
   if (cache) {
-    new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect');
+    if (instance && instance.up) {
+      new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect');
+    } else {
+      // new_button.setAttribute('disabled', true);
+      new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect');
+    }
     new_button.addEventListener("click", deleteHost, true);
     new_button.addEventListener("onclick", deleteHost, true);
     func_icon.appendChild(document.createTextNode('remove'));
   } else {
-    new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect mdl-button--colored');
+    if (instance && instance.up) {
+      new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect mdl-button--colored');
+    } else {
+      // new_button.setAttribute('disabled', true);
+      new_button.setAttribute('class', 'mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect');
+    }
     new_button.addEventListener("click", addNewHost, true);
     new_button.addEventListener("onclick", addNewHost, true);
     func_icon.appendChild(document.createTextNode('add'));
@@ -291,6 +300,12 @@ function createCol(hostname, instance, cache) {
 
   return tr;
 }
+
+var fragment;
+var thead_tr;
+var tbody;
+var cacheCols = {};
+var instanceCols = {};
 
 function onReceived(message) {
   if (!message) {
@@ -304,19 +319,19 @@ function onReceived(message) {
   height -= 20; //Adjust for Save button and horizontal scroll bar
   document.body.setAttribute('style', 'height:' + height + 'px;width:' + width + 'px;');
 
-  var fragment = document.createDocumentFragment();
+  if (!fragment) {
+    fragment = document.createDocumentFragment();
 
-  var selectDiv = document.createElement('table');
-  selectDiv.setAttribute('class', 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp');
-  fragment.appendChild(selectDiv);
+    var selectDiv = document.createElement('table');
+    selectDiv.setAttribute('class', 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp');
+    fragment.appendChild(selectDiv);
 
-  var thead;
-  if (!thead) {
-    thead = document.createElement('thead');
-    var thead_tr = document.createElement('tr');
+    var thead = document.createElement('thead');
+    thead_tr = document.createElement('tr');
 
     var th_status = document.createElement('th');
     th_status.appendChild(document.createTextNode('status'));
+    th_status.setAttribute('class', 'thread_status');
     thead_tr.appendChild(th_status);
 
     var th_name = document.createElement('th');
@@ -359,14 +374,28 @@ function onReceived(message) {
     thead_tr.appendChild(th_swpublic);
 
     thead.appendChild(thead_tr);
-  }
-  selectDiv.appendChild(thead);
+    selectDiv.appendChild(thead);
 
-  var select = document.createElement('tbody');
-  selectDiv.appendChild(select);
+    tbody = document.createElement('tbody');
+    selectDiv.appendChild(tbody);
+
+    var body = document.getElementById('id_body');
+    var body_content = document.createElement('div');
+    body_content.setAttribute('id', 'id_body_content');
+    body.appendChild(body_content);
+    body_content.appendChild(fragment);
+  } else {
+    if (!thead_tr.firstChild.getAttribute('class')) {
+      removeChild(thead_tr.firstChild);
+      thead_tr.removeChild(thead_tr.firstChild);
+    }
+    for (var child of tbody.childNodes) {
+      tbody.removeChild(child);
+    }
+  }
 
   for (var cache of message.cache_list) {
-    // console.log(JSON.stringify(cache, null, 2));
+    // registered by user
     if (!cache.access_token) {
       continue;
     }
@@ -378,29 +407,41 @@ function onReceived(message) {
       }
     }
     var hostname = cache.hostname;
-    var tr = createCol(hostname, instance, cache);
-    select.appendChild(tr);
+    var tr = cacheCols[hostname];
+    if (!tr) {
+      // create col
+      tr = createCol(hostname, instance, cache);
+      cacheCols[hostname] = tr;
+    } else {
+      // reuse col
+      if (!tr.firstChild.getAttribute('class')) {
+        removeChild(tr.firstChild);
+        tr.removeChild(tr.firstChild);
+      }
+    }
+    tbody.appendChild(tr);
   }
   for (var instance of message.instances) {
     var cache = false;
     var hostname = instance.name;
-    var tr = createCol(hostname, instance, cache);
-    select.appendChild(tr);
+    var tr = instanceCols[hostname];
+    if (!tr) {
+      // create col
+      tr = createCol(hostname, instance, cache);
+      instanceCols[hostname] = tr;
+    } else {
+      // reuse col
+      if (!tr.firstChild.getAttribute('class')) {
+        removeChild(tr.firstChild);
+        tr.removeChild(tr.firstChild);
+      }
+    }
+    tbody.appendChild(tr);
   }
   if (message.instances && message.instances.length) {} else {
+    console.log('reload tbody');
     setTimeout(loadFromBackground, 2000);
   }
-
-  var body = document.getElementById('id_body');
-  var body_content = document.getElementById('id_body_content');
-  if (body_content) {
-    removeChild(body_content);
-    body.removeChild(body_content);
-  }
-  body_content = document.createElement('div');
-  body_content.setAttribute('id', 'id_body_content');
-  body.appendChild(body_content);
-  body_content.appendChild(fragment);
 
   var MDLite = require('material-design-lite');
   var componentHandler = MDLite.componentHandler;
