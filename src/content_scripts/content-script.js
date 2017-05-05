@@ -62,11 +62,12 @@ function authorize() {
 function checkConfirmedHost() {
   var location = window.location;
   var hostname = new URL(location).hostname;
-  if (location == 'https://' + hostname + '/web/getting_started') {
+  console.log('Load ' + location + ', ' + hostname);
+  if (location == 'https://' + hostname + '/web/getting-started') {
     sendMessage({
       confirm: true,
       hostname: hostname,
-      page: '/web/getting_started'
+      page: '/web/getting-started'
     });
   }
   if (location == 'https://' + hostname + '/web/follow_requests') {

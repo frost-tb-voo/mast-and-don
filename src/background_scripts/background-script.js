@@ -136,9 +136,16 @@ function updateStorage(newCache) {
   });
 }
 
+var lastUpdated = 0;
+
 function sendUpdated() {
-  console.log('Sending background update');
   return new Promise(function (resolve, reject) {
+    var updating = new Date().getTime;
+    if (updating - lastUpdated < 1000) {
+      resolve('');
+    }
+    lastUpdated = updating;
+    console.log('Sending background update');
     if (browser != chrome) {
       var sending = browser.runtime.sendMessage({
         updated: true,
@@ -1109,9 +1116,10 @@ function receiveConfirmedHost(message, sender, sendResponse) {
   var hostname = message.hostname;
   var page = message.page;
 
+  console.log('Confirm at ' + page + ' in ' + hostname);
   getCache(hostname).then(function (cache) {
     var updated = false;
-    if (page == '/web/getting_started' ||
+    if (page == '/web/getting-started' ||
       page == '/web/timelines/public' ||
       page == '/web/timelines/public/local') {
       updated |= (cache.countFollowRequests > 0);
