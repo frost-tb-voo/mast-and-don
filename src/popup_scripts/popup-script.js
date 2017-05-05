@@ -340,11 +340,6 @@ function onReceived(message) {
   // console.log('receive to popup ' + JSON.stringify(message, null, 2));
   // console.log('receive to popup');
 
-  let width = window.innerWidth;
-  let height = window.innerHeight;
-  height -= 20; //Adjust for Save button and horizontal scroll bar
-  document.body.setAttribute('style', 'height:' + height + 'px;width:' + width + 'px;');
-
   if (!fragment) {
     fragment = document.createDocumentFragment();
 
@@ -522,8 +517,8 @@ function onReceived(message) {
     tbody.appendChild(tr);
   }
   if (message.instances && message.instances.length) {} else {
-    console.log('reload tbody');
-    setTimeout(loadFromBackground, 2000);
+    console.log('Reload tbody');
+    setTimeout(loadFromBackground, 3000);
   }
 
   var MDLite = require('material-design-lite');
