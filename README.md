@@ -22,17 +22,36 @@ If the authorization task succeeded, the add-on provides notification 'Add a new
 
 mastodon の認証終了後, アドオンから通知が表示されます. その後, 約 20 秒ごとに通知を表示するようになります.
 
+### How to invalidate your token
+
+To invalidate your access token for mastodon server, at 1st, click the '-' button for your host.
+
+アドオン用に発行したアクセストークンを無効にするためには，まずホスト名 (mastodon.cloud など) の右側に書いてある '-' ボタンをクリックしてください.
+
+![instruction_1](./addon/docs/revoke_a_1280x800.png)
+
+2nd, open your mastodon with your browser, and `revoke` the add-on in the following configuration page.
+
+次にブラウザからマストドンへアクセスし，下記設定画面から `取り消し` をクリックしてください.
+
+![instruction_2](./addon/docs/revoke_b_1280x800.png)
+![instruction_3](./addon/docs/revoke_c_1280x800.png)
+
+For more information, see following documents.
+
+- https://github.com/tootsuite/documentation/blob/master/Using-the-API/OAuth-details.md
+- https://github.com/doorkeeper-gem/doorkeeper/wiki/API-endpoint-descriptions-and-examples
+
 ## Build instruction
 
 - Install npm.
-- Install webpack and web-ext.
+- Install webpack and web-ext; `npm install -g webpack web-ext`
 - `npm install`
 - `npm run build`
 - Change your directory to `addon`
 - `web-ext build`.
 
 ### firefox extension
-
 Before do `web-ext build`, comment out `var browser = chrome;` in
 
 - background-script.js
@@ -40,7 +59,6 @@ Before do `web-ext build`, comment out `var browser = chrome;` in
 - content-script.js
 
 ### google chrome extension
-
 Before do `web-ext build`, uncomment `var browser = chrome;` in
 
 - background-script.js
