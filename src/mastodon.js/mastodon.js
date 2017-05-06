@@ -28,16 +28,18 @@ var MastodonAPI = function (config) {
             // where querydata is an object {["paramname1", "paramvalue1], ["paramname2","paramvalue2"]}
 
             // variables
-            var queryData, callback,
-                queryStringAppend = "?";
+            var queryData, callback, onError,
+            queryStringAppend = "?";
 
             // check with which arguments we're supplied
             if (typeof arguments[1] === "function") {
                 queryData = {};
                 callback = arguments[1];
+                onError = arguments[2];
             } else {
                 queryData = arguments[1];
                 callback = arguments[2];
+                onError = arguments[3];
             }
             // build queryData Object into a URL Query String
             for (var i in queryData) {
@@ -64,19 +66,28 @@ var MastodonAPI = function (config) {
                     //aaand start the callback
                     //might have to check what "textStatus" actually is, jquery docs are a bit dodgy
                     callback(data, textStatus);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if (onError) {
+                        onError(textStatus, errorThrown);
+                    } else {
+                        throw errorThrown;
+                    }
                 }
             });
         },
         post: function (endpoint) {
             // for POST API calls
-            var postData, callback;
+            var postData, callback, onError;
             // check with which arguments we're supplied
             if (typeof arguments[1] === "function") {
                 postData = {};
                 callback = arguments[1];
+                onError = arguments[2];
             } else {
                 postData = arguments[1];
                 callback = arguments[2];
+                onError = arguments[3];
             }
             $.ajax({
                 url: apiBase + endpoint,
@@ -88,10 +99,17 @@ var MastodonAPI = function (config) {
                 success: function (data, textStatus) {
                     console.log("Successful POST API request to " + apiBase + endpoint);
                     callback(data, textStatus)
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if (onError) {
+                        onError(textStatus, errorThrown);
+                    } else {
+                        throw errorThrown;
+                    }
                 }
             });
         },
-        delete: function (endpoint, callback) {
+        delete: function (endpoint, callback, onError) {
             // for DELETE API calls.
             $.ajax({
                 url: apiBase + endpoint,
@@ -102,6 +120,13 @@ var MastodonAPI = function (config) {
                 success: function (data, textStatus) {
                     console.log("Successful DELETE API request to " + apiBase + endpoint);
                     callback(data, textStatus)
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if (onError) {
+                        onError(textStatus, errorThrown);
+                    } else {
+                        throw errorThrown;
+                    }
                 }
             });
         },
@@ -128,7 +153,7 @@ var MastodonAPI = function (config) {
 
 
         },
-        registerApplication: function (client_name, redirect_uri, scopes, website, callback) {
+        registerApplication: function (client_name, redirect_uri, scopes, website, callback, onError) {
             //register a new application
 
             // OAuth Auth flow:
@@ -159,6 +184,13 @@ var MastodonAPI = function (config) {
                 success: function (data, textStatus) {
                     console.log("Registered Application: " + data);
                     callback(data);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if (onError) {
+                        onError(textStatus, errorThrown);
+                    } else {
+                        throw errorThrown;
+                    }
                 }
             });
         },
@@ -166,7 +198,7 @@ var MastodonAPI = function (config) {
             return config.instance + "/oauth/authorize?client_id=" + client_id + "&redirect_uri=" + redirect_uri +
                 "&response_type=" + responseType + "&scope=" + scopes.join("+");
         },
-        getAccessTokenFromAuthCode: function (client_id, client_secret, redirect_uri, code, callback) {
+        getAccessTokenFromAuthCode: function (client_id, client_secret, redirect_uri, code, callback, onError) {
             $.ajax({
                 url: config.instance + "/oauth/token",
                 type: "POST",
@@ -180,6 +212,13 @@ var MastodonAPI = function (config) {
                 success: function (data, textStatus) {
                     console.log("Got Token: " + data);
                     callback(data);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if (onError) {
+                        onError(textStatus, errorThrown);
+                    } else {
+                        throw errorThrown;
+                    }
                 }
             });
         }

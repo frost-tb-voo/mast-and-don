@@ -1,8 +1,8 @@
 # mast-and-don
-You can know Masto DON notifications without opening many tabs.
+You can know Mastodon notifications without opening many tabs.
 
 ## Desciption
-You can know Masto DON notifications without opening many tabs. Look at the screenshot images to know the usage.
+You can know Mastodon notifications without opening many tabs. Look at the screenshot images to know the usage.
 
 タブを開かずにマストドンの通知を知ることができるアドオンです. 使い方は Screenshot をご覧ください.
 
