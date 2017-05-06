@@ -143,6 +143,7 @@ function sendUpdated() {
     var updating = new Date().getTime;
     if (updating - lastUpdated < 1000) {
       resolve('');
+      return;
     }
     lastUpdated = updating;
     console.log('Sending background update');
@@ -749,7 +750,7 @@ function GET_follow_requests(hostname) {
         }).catch(function (err) {
           reject(err);
         });
-      });
+      }, reject);
     });
   });
 }
@@ -833,7 +834,7 @@ function GET_notifications(hostname) {
           });
           break;
         }
-      });
+      }, reject);
     });
   });
 }
@@ -942,8 +943,7 @@ function GET_timelines_home(hostname) {
           });
           break;
         }
-
-      });
+      }, reject);
     });
   });
 }
@@ -1053,7 +1053,7 @@ function GET_timelines_public(hostname) {
           }).catch(reject);
           break;
         }
-      });
+      }, reject);
     });
   });
 }
@@ -1116,7 +1116,6 @@ function receiveConfirmedHost(message, sender, sendResponse) {
   var hostname = message.hostname;
   var page = message.page;
 
-  console.log('Confirm at ' + page + ' in ' + hostname);
   getCache(hostname).then(function (cache) {
     var updated = false;
     if (page == '/web/getting-started' ||
@@ -1130,6 +1129,7 @@ function receiveConfirmedHost(message, sender, sendResponse) {
       cache.countHome = 0;
       updated |= (cache.countPublic > 0);
       cache.countPublic = 0;
+      console.log('Confirm at ' + page + ' in ' + hostname);
     }
     if (page == '/web/follow_requests' ||
       page == '/web/notifications' ||
@@ -1140,6 +1140,7 @@ function receiveConfirmedHost(message, sender, sendResponse) {
       cache.countNotifications = 0;
       updated |= (cache.countHome > 0);
       cache.countHome = 0;
+      console.log('Confirm at ' + page + ' in ' + hostname);
     }
     if (updated) {
       updateStorage(cache).then().catch(onError);
