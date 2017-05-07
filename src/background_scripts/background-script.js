@@ -598,21 +598,33 @@ function pollingScheduler() {
             for (var message of messages) {
               messagesForHost.push(message);
             }
-            return GET_notifications(hostname);
+            if (!messagesForHost.length) {
+              return GET_notifications(hostname);
+            }
+            console.log('Skip notification fetch in ' + hostname);
+            return [];
           })
           .then(function (messages) {
             // console.log(JSON.stringify(messages, null, 2) + ' from GET_notifications');
             for (var message of messages) {
               messagesForHost.push(message);
             }
-            return GET_timelines_home(hostname);
+            if (!messagesForHost.length) {
+              return GET_timelines_home(hostname);
+            }
+            console.log('Skip home fetch in ' + hostname);
+            return [];
           })
           .then(function (messages) {
             // console.log(JSON.stringify(messages, null, 2) + ' from GET_timelines_home');
             for (var message of messages) {
               messagesForHost.push(message);
             }
-            return GET_timelines_public(hostname);
+            if (!messagesForHost.length) {
+              return GET_timelines_public(hostname);
+            }
+            console.log('Skip public fetch in ' + hostname);
+            return [];
           })
           .then(function (messages) {
             // console.log(JSON.stringify(messages) + ' from GET_timelines_public');
@@ -958,10 +970,7 @@ function GET_timelines_public(hostname) {
         return;
       }
       if (!cache.access_token) {
-        // XXX public api
-        // notify('token not found for ' + hostname);
-        // resolve(messages);
-        // return;
+        // XXX invoke public api without access_token
       }
       if (cache.offPublic) {
         // console.log('Skip GET_timelines_public');
