@@ -935,7 +935,7 @@ function GET_timelines_home(hostname) {
           var messageBoard = {
             title: unread.length + ' home toots in ' + hostname + '!',
             message: message,
-            link_url: 'https://' + hostname + '/web/timelines/public',
+            link_url: 'https://' + hostname + '/web/timelines/home',
             icon: avatar
           };
           messages.push(messageBoard);
