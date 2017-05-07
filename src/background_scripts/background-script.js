@@ -883,8 +883,8 @@ function GET_timelines_home(hostname) {
         }
 
         unread.sort(function (a, b) {
-          if (a.reblogs_count < b.reblogs_count) return 10;
-          if (a.reblogs_count > b.reblogs_count) return -10;
+          if (a.reblogs_count < b.reblogs_count) return 1;
+          if (a.reblogs_count > b.reblogs_count) return -1;
           if (a.favourites_count < b.favourites_count) return 1;
           if (a.favourites_count > b.favourites_count) return -1;
           return 0;
@@ -993,16 +993,29 @@ function GET_timelines_public(hostname) {
         }
 
         unread.sort(function (a, b) {
-          if (a.reblogs_count < b.reblogs_count) return 10;
-          if (a.reblogs_count > b.reblogs_count) return -10;
+          var a_account_acct = a.account.acct;
+          var aIsLocal = a_account_acct.indexOf('@') == -1 || a_account_acct.endsWith(hostname);
+          var b_account_acct = b.account.acct;
+          var bIsLocal = b_account_acct.indexOf('@') == -1 || b_account_acct.endsWith(hostname);
+
+          if (!aIsLocal && bIsLocal) return 1;
+          if (aIsLocal && !bIsLocal) return -1;
+          if (a.reblogs_count < b.reblogs_count) return 1;
+          if (a.reblogs_count > b.reblogs_count) return -1;
           if (a.favourites_count < b.favourites_count) return 1;
           if (a.favourites_count > b.favourites_count) return -1;
+          if (a.mentions.length < b.mentions.length) return -1;
+          if (a.mentions.length > b.mentions.length) return 1;
           return 0;
         });
 
         var doc = document.implementation.createHTMLDocument("");
         var dom = doc.createElement('html');
         for (var toot of unread) {
+          var account_url = toot.account.url;
+          var toot_uri = toot.uri;
+          var toot_url = toot.url;
+
           var created_at = toot.created_at;
           var display_name = toot.account.display_name;
           var username = toot.account.username;
@@ -1010,7 +1023,6 @@ function GET_timelines_public(hostname) {
           var reblogs_count = toot.reblogs_count;
           var favourites_count = toot.favourites_count;
           var account_id = toot.account.id;
-          var account_url = toot.account.url;
 
           var created_at_zone = new Date(created_at);
           var month = created_at_zone.getMonth() + 1;
@@ -1031,6 +1043,24 @@ function GET_timelines_public(hostname) {
             // message += ' ⭐' + favourites_count;
           }
           message += '\n' + content
+
+          if (false) {
+            // TODO experimental
+            for (var media_attachment of toot.media_attachments) {
+              var remote_url = media_attachment.remote_url;
+              var preview_url = media_attachment.preview_url;
+              if (remote_url && remote_url.startsWith('https://')) {
+                console.log('remote_url ' + remote_url);
+                avatar = remote_url;
+                break;
+              }
+              if (preview_url && preview_url.startsWith('https://')) {
+                console.log('preview_url ' + preview_url);
+                avatar = preview_url;
+                break;
+              }
+            }
+          }
 
           var messageBoard = {
             title: unread.length + ' public toots in ' + hostname + '!',
@@ -1149,3 +1179,10 @@ function receiveConfirmedHost(message, sender, sendResponse) {
 }
 
 browser.runtime.onMessage.addListener(receiveConfirmedHost);
+
+
+
+// TODO set interval
+// TODO switch alert (with polling without displaying notification)
+// TODO image previewing
+// TODO keyword filter
