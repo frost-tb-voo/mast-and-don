@@ -21,14 +21,12 @@
   }],
 
   "permissions": [
-    "contextMenus",
     "http://*/",
     "https://*/",
     "<all_urls>",
     "webRequest",
     "storage",
     "notifications",
-    "webRequestBlocking",
     "tabs",
     "activeTab"
   ],
