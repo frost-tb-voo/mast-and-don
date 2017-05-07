@@ -578,6 +578,7 @@ browser.runtime.onMessage.addListener(receiveUserCode);
 
 var pollingIndex = 0;
 var timerId;
+const POLLING_INTERVAL = 20000;
 
 function pollingScheduler() {
   console.log('Polling task start.');
@@ -634,7 +635,6 @@ function pollingScheduler() {
         }
         var messagesForHost = messageQueue[pollingIndex];
         for (var message of messagesForHost) {
-          // console.log(JSON.stringify(message, null, 2) + ' from all');
           notifyMessage(message);
           break;
         }
@@ -643,14 +643,14 @@ function pollingScheduler() {
       if (timerId) {
         clearTimeout(timerId);
       }
-      timerId = setTimeout(pollingScheduler, 20000);
+      timerId = setTimeout(pollingScheduler, POLLING_INTERVAL);
     }).catch(function (err) {
       onError('Promise#all ' + err);
       console.log('Polling task end with err.');
       if (timerId) {
         clearTimeout(timerId);
       }
-      timerId = setTimeout(pollingScheduler, 20000);
+      timerId = setTimeout(pollingScheduler, POLLING_INTERVAL);
     });
   }).catch(function (err) {
     onError('#loadStorage ' + err);
@@ -658,7 +658,7 @@ function pollingScheduler() {
     if (timerId) {
       clearTimeout(timerId);
     }
-    timerId = setTimeout(pollingScheduler, 20000);
+    timerId = setTimeout(pollingScheduler, POLLING_INTERVAL);
   });
 }
 pollingScheduler();
@@ -1184,5 +1184,6 @@ browser.runtime.onMessage.addListener(receiveConfirmedHost);
 
 // TODO set interval
 // TODO switch alert (with polling without displaying notification)
+// TODO # of notification displaying
 // TODO image previewing
 // TODO keyword filter
