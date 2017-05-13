@@ -180,12 +180,6 @@ function createCol(hostname, instance, cache) {
   var followRequests_sw = document.createElement('td');
   followRequests_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
-    var badge = document.createElement('span');
-    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
-    badge.setAttribute('data-badge', '0');
-    followRequests_sw.appendChild(badge);
-    badgesFollowRequests[hostname] = badge;
-
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'follow_requests_' + hostname);
@@ -203,18 +197,18 @@ function createCol(hostname, instance, cache) {
     span.setAttribute('class', 'mdl-switch__label');
     label.appendChild(span);
     followRequests_sw.appendChild(label);
+
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'hidden');
+    badge.setAttribute('data-badge', '0');
+    followRequests_sw.appendChild(badge);
+    badgesFollowRequests[hostname] = badge;
   }
   tr.appendChild(followRequests_sw);
 
   var notifications_sw = document.createElement('td');
   notifications_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
-    var badge = document.createElement('span');
-    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
-    badge.setAttribute('data-badge', '0');
-    notifications_sw.appendChild(badge);
-    badgesNotifications[hostname] = badge;
-
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'notifications_' + hostname);
@@ -232,18 +226,18 @@ function createCol(hostname, instance, cache) {
     span.setAttribute('class', 'mdl-switch__label');
     label.appendChild(span);
     notifications_sw.appendChild(label);
+
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'hidden');
+    badge.setAttribute('data-badge', '0');
+    notifications_sw.appendChild(badge);
+    badgesNotifications[hostname] = badge;
   }
   tr.appendChild(notifications_sw);
 
   var home_sw = document.createElement('td');
   home_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
-    var badge = document.createElement('span');
-    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
-    badge.setAttribute('data-badge', '0');
-    home_sw.appendChild(badge);
-    badgesHome[hostname] = badge;
-
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'home_' + hostname);
@@ -261,18 +255,18 @@ function createCol(hostname, instance, cache) {
     span.setAttribute('class', 'mdl-switch__label');
     label.appendChild(span);
     home_sw.appendChild(label);
+
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'hidden');
+    badge.setAttribute('data-badge', '0');
+    home_sw.appendChild(badge);
+    badgesHome[hostname] = badge;
   }
   tr.appendChild(home_sw);
 
   var public_sw = document.createElement('td');
   public_sw.setAttribute('class', 'mdl-data-table__cell--non-numeric');
   if (cache) {
-    var badge = document.createElement('span');
-    badge.setAttribute('class', 'mdl-badge mdl-badge--overlap');
-    badge.setAttribute('data-badge', '0');
-    public_sw.appendChild(badge);
-    badgesPublic[hostname] = badge;
-
     var label = document.createElement('label');
     label.setAttribute('class', 'mdl-switch mdl-js-switch mdl-js-ripple-effect');
     label.setAttribute('for', 'public_' + hostname);
@@ -290,6 +284,12 @@ function createCol(hostname, instance, cache) {
     span.setAttribute('class', 'mdl-switch__label');
     label.appendChild(span);
     public_sw.appendChild(label);
+
+    var badge = document.createElement('span');
+    badge.setAttribute('class', 'hidden');
+    badge.setAttribute('data-badge', '0');
+    public_sw.appendChild(badge);
+    badgesPublic[hostname] = badge;
   }
   tr.appendChild(public_sw);
 
@@ -387,7 +387,7 @@ function onReceived(message) {
     thead_tr.appendChild(th_sw_notification);
 
     var th_swhome = document.createElement('th');
-    th_swhome.appendChild(document.createTextNode('home'));
+    th_swhome.appendChild(document.createTextNode('home__'));
     thead_tr.appendChild(th_swhome);
 
     var th_swpublic = document.createElement('th');
@@ -459,6 +459,11 @@ function onReceived(message) {
       var badgeFollowRequests = badgesFollowRequests[hostname];
       if (badgeFollowRequests.getAttribute('data-badge') != countFollowRequests) {
         badgeFollowRequests.setAttribute('data-badge', countFollowRequests);
+        if (countFollowRequests > 0 || countFollowRequests == '20+') {
+          badgeFollowRequests.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+        } else {
+          badgeFollowRequests.setAttribute('class', 'hidden');
+        }
       }
 
       var countNotifications = cache.countNotifications;
@@ -471,6 +476,11 @@ function onReceived(message) {
       var badgeNotifications = badgesNotifications[hostname];
       if (badgeNotifications.getAttribute('data-badge') != countNotifications) {
         badgeNotifications.setAttribute('data-badge', countNotifications);
+        if (countNotifications > 0 || countNotifications == '20+') {
+          badgeNotifications.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+        } else {
+          badgeNotifications.setAttribute('class', 'hidden');
+        }
       }
 
       var countHome = cache.countHome;
@@ -483,6 +493,12 @@ function onReceived(message) {
       var badgeHome = badgesHome[hostname];
       if (badgeHome.getAttribute('data-badge') != countHome) {
         badgeHome.setAttribute('data-badge', countHome);
+        if (countHome > 0 || countHome == '20+') {
+          badgeHome.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+        } else {
+          console.log('badge ' + countHome);
+          badgeHome.setAttribute('class', 'hidden');
+        }
       }
 
       var countPublic = cache.countPublic;
@@ -495,6 +511,11 @@ function onReceived(message) {
       var badgePublic = badgesPublic[hostname];
       if (badgePublic.getAttribute('data-badge') != countPublic) {
         badgePublic.setAttribute('data-badge', countPublic);
+        if (countPublic > 0 || countPublic == '20+') {
+          badgePublic.setAttribute('class', 'mdl-badge mdl-badge--overlap');
+        } else {
+          badgePublic.setAttribute('class', 'hidden');
+        }
       }
     }
     tbody.appendChild(tr);
