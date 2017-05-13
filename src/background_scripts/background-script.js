@@ -636,7 +636,10 @@ function pollingScheduler() {
               messageQueue.push(messagesForHost);
             }
             resolve('');
-          }).catch(reject);
+          }).catch(function (err) {
+            onError(err + ' at ' + hostname);
+            resolve('');
+          });
       });
     })).then(function (values) {
       console.log('Polling task end.');
