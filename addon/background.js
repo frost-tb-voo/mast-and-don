@@ -124,7 +124,7 @@ if (chrome.browserAction && chrome.browserAction.onClicked) {
 
 
 
-let config = getFromStorage();
+let config = {};
 
 function returnResponse(message, sender, sendResponse) {
   // console.log(JSON.stringify(message, null, 1));
@@ -132,7 +132,7 @@ function returnResponse(message, sender, sendResponse) {
     return;
   }
   syncStorage(message);
-  let responseMessage = 'Connecting...';
+  let responseMessage = 'Sync storage complete.';
   sendResponse({
     message: responseMessage,
     config: config
@@ -142,18 +142,27 @@ function returnResponse(message, sender, sendResponse) {
 chrome.runtime.onMessage.addListener(returnResponse);
 
 async function syncStorage(message) {
-  if (message.config) {
+  if (message && message.config) {
+    message.config.status = true;
     await setIntoStorage(message.config);
   }
   config = await getFromStorage();
+  console.log('Sync storage complete: ' + JSON.stringify(config, null, 1));
+  if (!config.status) {
+    setTimeout(syncStorage, 3000);
+  }
 }
+
+syncStorage();
 
 async function getFromStorage() {
   try {
     await storageLocalGet('mstdn');
   } catch (err) {
     await storageLocalSet({
-      'mstdn': {}
+      'mstdn': {
+        'status': true
+      }
     });
   }
   let _results = await storageLocalGet('mstdn');
