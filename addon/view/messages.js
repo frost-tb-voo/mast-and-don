@@ -392,6 +392,7 @@ async function showNewToot(toot, domain) {
 }
 
 function createDom(data) {
+  let doc;
   if (document.implementation.createHTMLDocument) {
     doc = document.implementation.createHTMLDocument("");
     // let dom = doc.createElement('html');
