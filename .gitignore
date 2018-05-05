@@ -40,4 +40,8 @@ jspm_packages
 **/index.js.map
 
 **/*.lnk
+**/*.web-extension-id
+**/*.zip
+**/*.xpi
+
 
