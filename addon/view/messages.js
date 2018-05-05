@@ -31,48 +31,46 @@ function restoreConfig() {
   }).then((message) => {
     console.log(JSON.stringify(message, null, 1));
     updateSupportingMessage(message.message);
-    if (message.config) {
-      if (Object.keys(message.config).includes('domains')) {
-        domains = message.config.domains;
-      }
-      if (Object.keys(message.config).includes('millisecondsPolling')) {
-        millisecondsPolling = message.config.millisecondsPolling;
-      }
-      if (Object.keys(message.config).includes('languagesUnchecked')) {
-        let languagesUnchecked = message.config.languagesUnchecked;
-        for (let language of languagesUnchecked) {
-          createNewLanguageFilter(language);
-          let checkbox = document.getElementById('checkbox-' + language);
-          checkbox.removeAttribute('checked');
-        }
-      }
-      if (Object.keys(message.config).includes('instanceInfoSwitchChecked')) {
-        let instanceInfoSwitchChecked = message.config.instanceInfoSwitchChecked;
-        let instanceInfoSwitch = document.getElementById('instance-info-switch');
-        if (instanceInfoSwitchChecked) {
-          instanceInfoSwitch.setAttribute('checked', true);
-        } else {
-          instanceInfoSwitch.removeAttribute('checked');
-        }
-      }
-      if (Object.keys(message.config).includes('schemeSwitchChecked')) {
-        let schemeSwitchChecked = message.config.schemeSwitchChecked;
-        if (schemeSwitchChecked) {
-          targetScheme = 'http:';
-        } else {
-          targetScheme = 'https:';
-        }
-        let schemeSwitch = document.getElementById('scheme-switch');
-        if (schemeSwitchChecked) {
-          schemeSwitch.setAttribute('checked', true);
-        } else {
-          schemeSwitch.removeAttribute('checked');
-        }
-      }
-      polling();
-    } else {
-      setTimeout(restoreConfig, 1000);
+    if (Object.keys(message.config).includes('domains')) {
+      domains = message.config.domains;
     }
+    if (Object.keys(message.config).includes('languagesUnchecked')) {
+      let languagesUnchecked = message.config.languagesUnchecked;
+      for (let language of languagesUnchecked) {
+        if (language && !languages.includes(language)) {
+          languages.push(language);
+          createNewLanguageFilter(language);
+        }
+        let checkbox = document.getElementById('checkbox-' + language);
+        checkbox.removeAttribute('checked');
+      }
+    }
+    if (Object.keys(message.config).includes('instanceInfoSwitchChecked')) {
+      let instanceInfoSwitchChecked = message.config.instanceInfoSwitchChecked;
+      let instanceInfoSwitch = document.getElementById('instance-info-switch');
+      if (instanceInfoSwitchChecked) {
+        instanceInfoSwitch.setAttribute('checked', true);
+      } else {
+        instanceInfoSwitch.removeAttribute('checked');
+      }
+    }
+    if (Object.keys(message.config).includes('schemeSwitchChecked')) {
+      let schemeSwitchChecked = message.config.schemeSwitchChecked;
+      if (schemeSwitchChecked) {
+        targetScheme = 'http:';
+        targetWsScheme = 'ws:';
+      } else {
+        targetScheme = 'https:';
+        targetWsScheme = 'wss:';
+      }
+      let schemeSwitch = document.getElementById('scheme-switch');
+      if (schemeSwitchChecked) {
+        schemeSwitch.setAttribute('checked', true);
+      } else {
+        schemeSwitch.removeAttribute('checked');
+      }
+    }
+    requestTimelinesApi();
   }, console.error);
 }
 
@@ -82,10 +80,6 @@ function setLocale() {
   {
     let dom = document.getElementById('register-text-description');
     let message = getBrowser().i18n.getMessage('registerText');
-    dom.appendChild(document.createTextNode(message));
-  } {
-    let dom = document.getElementById('polling-text-description');
-    let message = getBrowser().i18n.getMessage('pollingText');
     dom.appendChild(document.createTextNode(message));
   } {
     let dom = document.getElementById('instance-info-switch-description');
@@ -101,7 +95,6 @@ function setLocale() {
 setLocale();
 
 function updateSupportingMessage(message) {
-  console.log(message);
   let consoleDiv = document.getElementById('div-console');
   if (consoleDiv) {
     consoleDiv.textContent = message;
@@ -109,37 +102,56 @@ function updateSupportingMessage(message) {
 }
 
 function requestStreaming(newDomain, access_token) {
-  // /api/v1/streaming/?stream=public
-  let path = '/api/v1/streaming/public';
-  path = '/api/v1/streaming/list'; //401
-  path = '/api/v1/streaming/user'; //401
-  path = '/api/v1/streaming/hashtag'; //500
-  path = '/api/v1/streaming/public/local';
-  path = '/api/v1/streaming/public';
-  let evtSource = new EventSource('wss://' + newDomain + path + '?access_token=' + access_token);
-  evtSource.onmessage = function (evt) {
-    let data = evt.data;
-    console.log(JSON.stringify(data, null, 1));
-  }
+  let target = 'public';
+  target = 'list'; //401
+  target = 'user'; //401
+  target = 'public/local'; //401
+  target = 'local'; //401
+  target = 'hashtag';
+  target = 'playlist';
+  target = 'public';
+  let path = '/api/v1/streaming/';
 
-  let connection = new WebSocket('wss://' + newDomain + path + '?access_token=' + access_token);
+  let connection = new WebSocket(targetWsScheme + '//' + newDomain + path + '?stream=' + target + '&access_token=' + access_token);
   connection.onopen = function (evt) {
-    console.log(JSON.stringify(evt, null, 1));
+    console.log('ws:' + newDomain + ':' + JSON.stringify(evt, null, 1));
+    updateSupportingMessage('Open streaming ' + newDomain);
   };
 
   connection.onmessage = function (evt) {
-    let data = e.data;
-    console.log(JSON.stringify(data, null, 1));
+    if (!evt.data) {
+      console.log('ws:' + newDomain + ':' + JSON.stringify(evt, null, 1));
+      return;
+    }
+    let data = JSON.parse(evt.data);
+    if (!data) {
+      return;
+    }
+    if (data.event != 'update') {
+      console.log('ws:' + newDomain + ':' + data.event);
+    }
+    if (!data.payload) {
+      return;
+    }
+    let toot = JSON.parse(data.payload);
+    // console.log('ws:' + JSON.stringify(toot, null, 1));
+    if (toot.account) {
+      let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
+      url = toot.url.replace(/users\/(.+)\/updates/, '@$1');
+      if (Object.keys(toots_domain).includes(url)) {
+        return;
+      }
+      toots_domain[url] = newDomain;
+      showNewToot(toot, newDomain);
+    }
   }
 }
-
-// requestStreaming();
 
 let domains = [
   'mastodon.social',
 ];
 
-function register(evt) {
+async function register(evt) {
   if (evt) {
     evt.preventDefault();
   }
@@ -147,51 +159,25 @@ function register(evt) {
   let newDomain = registerText.value;
   if (newDomain && !domains.includes(newDomain)) {
     domains.push(newDomain);
-    createNewDomainFilter(newDomain);
+    await requestTimelinesApi();
   }
-  requestTimelinesApi();
 }
 
 document
   .getElementById('register-form')
   .addEventListener('submit', register, false);
 
-const MILLISECONDS_POLLING_MIN = 60000 * 5;
-let millisecondsPolling = MILLISECONDS_POLLING_MIN;
-
-async function updateMillisecondsPolling(evt) {
-  if (evt) {
-    evt.preventDefault();
-  }
-  let pollingText = document.getElementById('polling-text');
-  let newPollingMilliseconds = pollingText.value - 0;
-  if (newPollingMilliseconds < 0) {
-    newPollingMilliseconds = 0;
-  }
-  newPollingMilliseconds *= 60000;
-
-  if (newPollingMilliseconds > 0 && newPollingMilliseconds < MILLISECONDS_POLLING_MIN) {
-    newPollingMilliseconds = MILLISECONDS_POLLING_MIN;
-  }
-  let previousValue = millisecondsPolling;
-  millisecondsPolling = newPollingMilliseconds;
-  if (previousValue == 0 && millisecondsPolling > 0) {
-    await polling();
-  }
-}
-
-document
-  .getElementById('polling-form')
-  .addEventListener('submit', updateMillisecondsPolling, false);
-
 let targetScheme = 'https:';
+let targetWsScheme = 'wss:';
 
 function changeScheme(evt) {
   let schemeSwitchChecked = document.getElementById('scheme-switch').checked;
   if (schemeSwitchChecked) {
     targetScheme = 'http:';
+    targetWsScheme = 'ws:';
   } else {
     targetScheme = 'https:';
+    targetWsScheme = 'wss:';
   }
 }
 
@@ -199,7 +185,7 @@ document
   .getElementById('scheme-switch')
   .addEventListener('change', changeScheme, false);
 
-function saveConfig(evt) {
+async function saveConfig(evt) {
   let languagesUnchecked = [];
   for (let language of languages) {
     let checkbox = document.getElementById('checkbox-' + language);
@@ -210,15 +196,13 @@ function saveConfig(evt) {
   }
   let instanceInfoSwitchChecked = document.getElementById('instance-info-switch').checked;
   let schemeSwitchChecked = document.getElementById('scheme-switch').checked;
-  register(evt);
-  updateMillisecondsPolling(evt);
   changeScheme(evt);
+  await register(evt);
 
   runtimeSendMessage({
     popup: true,
     config: {
       domains: domains,
-      millisecondsPolling: millisecondsPolling,
       languagesUnchecked: languagesUnchecked,
       instanceInfoSwitchChecked: instanceInfoSwitchChecked,
       schemeSwitchChecked: schemeSwitchChecked,
@@ -233,26 +217,26 @@ document
   .getElementById('save-config-button')
   .addEventListener('click', saveConfig);
 
-async function polling() {
-  await requestTimelinesApi();
-  if (millisecondsPolling > 0) {
-    console.log('polling after ' + millisecondsPolling);
-    setTimeout(polling, millisecondsPolling);
-  }
-}
-
+let minIds = {};
 let toots_domain = {};
+let connecting = false;
 
-async function requestTimelinesApi() {
+async function requestTimelinesApi(isFetchingPrevious) {
   let toots = [];
+  if (connecting) {
+    return;
+  }
+  connecting = true;
   for (let fetchingDomain of domains) {
     let path = '/api/v1/timelines/public';
+    if (isFetchingPrevious && minIds[fetchingDomain]) {
+      path += '?max_id=' + minIds[fetchingDomain] + '&limit=20';
+    }
     updateSupportingMessage('Connecting to ' + fetchingDomain + ' ...');
     try {
       let response = await fetch(targetScheme + '//' + fetchingDomain + path);
       console.log(fetchingDomain + ' : ' + response.status);
       let data = await response.json();
-
       for (let toot of data) {
         let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
         url = toot.url.replace(/users\/(.+)\/updates/, '@$1');
@@ -263,31 +247,49 @@ async function requestTimelinesApi() {
         toots_domain[url] = fetchingDomain;
       }
     } catch (err) {
-      updateSupportingMessage(err);
+      updateSupportingMessage('err:' + JSON.stringify(err, null, 1));
     }
   }
-  toots.sort((aa, bb) => {
-    return new Date(aa.created_at) - new Date(bb.created_at);
-  });
+  if (!isFetchingPrevious) {
+    toots.sort((aa, bb) => {
+      return new Date(aa.created_at) - new Date(bb.created_at);
+    });
+  } else {
+    toots.sort((aa, bb) => {
+      return new Date(bb.created_at) - new Date(aa.created_at);
+    });
+  }
+  for (let fetchingDomain of domains) {
+    await createNewDomain(fetchingDomain);
+  }
   for (let toot of toots) {
     let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
     url = toot.url.replace(/users\/(.+)\/updates/, '@$1');
-    let domain = toots_domain[url];
-    await showNewToot(toot, domain);
+    let fetchingDomain = toots_domain[url];
+    if (!isFetchingPrevious) {
+      await showNewToot(toot, fetchingDomain, false);
+    } else {
+      await showNewToot(toot, fetchingDomain, true);
+    }
   }
-
   updateSupportingMessage('Updated at ' + new Date());
-
   document
     .getElementById('config-button')
     .addEventListener('click', configSwitch);
+  connecting = false;
 }
 
-async function showNewToot(toot, domain) {
+function showNewToot(toot, domain, isAppending) {
   let acct = toot.account.acct;
   let acct_domain = acct.replace(/^(.+)@(.+)$/, '$2');
   if (!acct.includes('@')) {
     acct_domain = domain;
+    if (!minIds[domain]) {
+      minIds[domain] = toot.id;
+    }
+    if (minIds[domain] > toot.id) {
+      minIds[domain] = toot.id;
+    }
   }
 
   let url = toot.url;
@@ -306,15 +308,21 @@ async function showNewToot(toot, domain) {
   let month = created_at_zone.getMonth() + 1;
   let created_at_string = month + '/' + created_at_zone.getDate() + ' ' + created_at_zone.getHours() + ':' + created_at_zone.getMinutes();
 
-  let dom = document.createElement('html');
   let content = toot.content;
-  // dom.innerHTML = toot.content;
-  // content = dom.textContent;
 
   let language = toot.language;
   if (language && !languages.includes(language)) {
     languages.push(language);
     createNewLanguageFilter(language);
+  }
+
+  createNewDomainFilter(acct_domain);
+
+  let tlId = 'tl-' + acct_domain;
+  // tlId = 'all';
+  let eventList = document.getElementById(tlId);
+  if (!eventList) {
+    return;
   }
 
   let container = document.createElement('div');
@@ -323,6 +331,7 @@ async function showNewToot(toot, domain) {
   } else {
     container.setAttribute('class', 'timeline-step');
   }
+  container.setAttribute('background', avatar);
   container.style.background = 'url("' + avatar + '")';
   container.style.backgroundPosition = 'right top';
   container.style.backgroundRepeat = 'no-repeat';
@@ -368,31 +377,13 @@ async function showNewToot(toot, domain) {
   sInner.appendChild(createDom(content));
   sContent.appendChild(sInner);
 
-  let tlId = 'tl-' + acct_domain;
-  // tlId = 'all';
-  let eventList = document.getElementById(tlId);
-  if (!eventList) {
-    console.log('create event list for ' + acct_domain + ' with ' + acct)
-    let eventList = await createNewTimeline(acct_domain, tlId);
-
+  if (!isAppending) {
     eventList.insertBefore(container, eventList.firstChild.nextSibling);
-
-    let tl = document.getElementById('tl');
-    let td = document.createElement('td');
-    td.appendChild(eventList);
-    tl.appendChild(td);
-
-    createNewDomainFilter(acct_domain);
-
-    if (!domains.includes(acct_domain)) {
-      eventList.parentElement.style.display = 'none';
-    }
   } else {
-    eventList.insertBefore(container, eventList.firstChild.nextSibling);
-
-    if (!domains.includes(acct_domain)) {
-      eventList.parentElement.style.display = 'none';
-    }
+    eventList.insertBefore(container, eventList.lastChild);
+  }
+  if (!domains.includes(acct_domain)) {
+    eventList.parentElement.style.display = 'none';
   }
 }
 
@@ -429,6 +420,25 @@ function createDom(data) {
   return doc.documentElement;
 }
 
+async function createNewDomain(acct_domain) {
+  let tlId = 'tl-' + acct_domain;
+  // tlId = 'all';
+  let eventList = document.getElementById(tlId);
+  if (!eventList) {
+    let tlId = 'tl-' + acct_domain;
+    console.log('create event list for ' + acct_domain)
+    let eventList = await createNewTimeline(acct_domain, tlId);
+
+    let tl = document.getElementById('tl');
+    let td = document.createElement('td');
+    td.appendChild(eventList);
+    tl.appendChild(td);
+
+    createNewDomainFilter(acct_domain);
+    requestStreaming(acct_domain, '');
+  }
+}
+
 async function createNewTimeline(acct_domain, tlId) {
   let eventList = document.createElement('div');
   eventList.style.minWidth = '320px';
@@ -441,6 +451,20 @@ async function createNewTimeline(acct_domain, tlId) {
   let descriptionDiv = document.createElement('div');
   h2.appendChild(descriptionDiv);
   eventList.appendChild(h2);
+
+  let handlerDom = document.createElement('div');
+  handlerDom.style.color = '#ffffff';
+  handlerDom.style.height = '100%';
+  handlerDom.appendChild(document.createTextNode('more'));
+  window.addEventListener('scroll', (evt) => {
+    let clientHeight = document.documentElement.clientHeight;
+    let top = handlerDom.getBoundingClientRect().top;
+    let bottom = handlerDom.getBoundingClientRect().bottom;
+    if (clientHeight > top || clientHeight > bottom) {
+      requestTimelinesApi(true);
+    }
+  });
+  eventList.appendChild(handlerDom);
 
   let instanceInfoSwitch = document.getElementById('instance-info-switch');
   if (!instanceInfoSwitch.checked) {
@@ -494,7 +518,7 @@ async function createNewTimeline(acct_domain, tlId) {
 
     h2.appendChild(headerDiv);
   } catch (err) {
-    updateSupportingMessage(err);
+    updateSupportingMessage('err:' + JSON.stringify(err, null, 1));
   }
 
   return eventList;
@@ -503,7 +527,9 @@ async function createNewTimeline(acct_domain, tlId) {
 function createNewDomainFilter(acct_domain) {
   let filters = document.getElementById('filter-domain');
   let filterId = 'filter-' + acct_domain;
-  if (document.getElementById(filterId)) {}
+  if (document.getElementById(filterId)) {
+    return;
+  }
 
   let form = document.createElement('div');
   form.setAttribute('class', 'mdc-form-field');
@@ -517,17 +543,21 @@ function createNewDomainFilter(acct_domain) {
   checkbox.setAttribute('id', 'checkbox-' + acct_domain);
 
   checkbox.onclick = (event) => {
-    let eventList = document.getElementById('tl-' + acct_domain);
-    if (!eventList) {
-      return;
-    }
     if (checkbox.checked) {
-      eventList.parentElement.removeAttribute('style');
+      let eventList = document.getElementById('tl-' + acct_domain);
+      if (eventList) {
+        eventList.parentElement.removeAttribute('style');
+      }
+      // add into fetching domains
       if (!domains.includes(acct_domain)) {
         domains.push(acct_domain);
+        requestTimelinesApi();
       }
     } else {
-      eventList.parentElement.style.display = 'none';
+      let eventList = document.getElementById('tl-' + acct_domain);
+      if (eventList) {
+        eventList.parentElement.style.display = 'none';
+      }
       // remove from fetching domains
       let index = domains.indexOf(acct_domain);
       if (index > -1) {
