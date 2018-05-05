@@ -292,8 +292,11 @@ async function showNewToot(toot, domain) {
 
   let url = toot.url;
   let created_at = toot.created_at;
-  let display_name = toot.account.display_name;
   let username = toot.account.username;
+  let display_name = toot.account.display_name;
+  if (!display_name) {
+    display_name = username;
+  }
   let avatar = toot.account.avatar;
   let headerImage = toot.account.header;
   let reblogs_count = toot.reblogs_count;
