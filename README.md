@@ -9,5 +9,5 @@ This plugin provides public timeline viewer for mastodon.
 
 マストドンの公開タイムラインを眺めるためのビューアです.
 
-![view](./docs/view_640x400.png)
-![overview](./docs/overview_1280x800.png)
+![view](./addon/docs/view_640x400.png)
+![overview](./addon/docs/overview_1280x800.png)
