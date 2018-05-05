@@ -254,7 +254,8 @@ async function requestTimelinesApi() {
       let data = await response.json();
 
       for (let toot of data) {
-        let url = toot.url.replace(/users\/(.+)\/(.+)/, '@$1');
+        let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
+        url = toot.url.replace(/users\/(.+)\/updates/, '@$1');
         if (Object.keys(toots_domain).includes(url)) {
           continue;
         }
@@ -270,6 +271,7 @@ async function requestTimelinesApi() {
   });
   for (let toot of toots) {
     let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
+    url = toot.url.replace(/users\/(.+)\/updates/, '@$1');
     let domain = toots_domain[url];
     await showNewToot(toot, domain);
   }
