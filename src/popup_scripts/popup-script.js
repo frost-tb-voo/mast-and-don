@@ -7,7 +7,19 @@ function onFailed(error) {
   }
 }
 
-// TODO /authorize_follow?acct=
+function openSignOutPage(hostname) {
+  // console.log("injecting");
+  browser.tabs.create({
+    "url": "https://" + hostname + "/auth/sign_out"
+  });
+}
+
+function openAuthorizeFollowPage(hostname, username) {
+  // console.log("injecting");
+  browser.tabs.create({
+    "url": "https://" + hostname + "/authorize_follow?acct=" + username
+  });
+}
 
 function addNewHost(event) {
   event.preventDefault();
