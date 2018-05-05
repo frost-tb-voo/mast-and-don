@@ -13,6 +13,10 @@
     "message": "インスタンス名と壁紙を取得",
     "description": "Description of the button."
   },
+  "schemeSwitch": {
+    "message": "Use http instead of https",
+    "description": "Description of the button."
+  },
   "pollingText": {
     "message": "分ごとに更新します. 0 なら更新なし",
     "description": "Description of the button."

@@ -13,6 +13,10 @@
     "message": "Get information for each instance",
     "description": "Description of the button."
   },
+  "schemeSwitch": {
+    "message": "Use http instead of https",
+    "description": "Description of the button."
+  },
   "pollingText": {
     "message": "Polling per the minutes. No update with 0 value.",
     "description": "Description of the button."

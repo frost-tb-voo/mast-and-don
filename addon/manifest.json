@@ -3,7 +3,7 @@
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "default_locale": "en",
   "icons": {
     "16": "./icons/mastoandon-16.png",
@@ -19,6 +19,12 @@
   "web_accessible_resources": ["view/messages.js"],
 
   "page_action": {
+    "default_icon": "icons/mastoandon-32.png",
+    "default_title": "Masto and DON",
+    "browser_style": true
+  },
+
+  "browser_action": {
     "default_icon": "icons/mastoandon-32.png",
     "default_title": "Masto and DON",
     "browser_style": true

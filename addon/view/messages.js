@@ -32,23 +32,41 @@ function restoreConfig() {
     console.log(JSON.stringify(message, null, 1));
     updateSupportingMessage(message.message);
     if (message.config) {
-      if (message.config.domains) {
+      if (Object.keys(message.config).includes('domains')) {
         domains = message.config.domains;
+      }
+      if (Object.keys(message.config).includes('millisecondsPolling')) {
         millisecondsPolling = message.config.millisecondsPolling;
-
+      }
+      if (Object.keys(message.config).includes('languagesUnchecked')) {
         let languagesUnchecked = message.config.languagesUnchecked;
         for (let language of languagesUnchecked) {
           createNewLanguageFilter(language);
           let checkbox = document.getElementById('checkbox-' + language);
           checkbox.removeAttribute('checked');
         }
-
+      }
+      if (Object.keys(message.config).includes('instanceInfoSwitchChecked')) {
         let instanceInfoSwitchChecked = message.config.instanceInfoSwitchChecked;
         let instanceInfoSwitch = document.getElementById('instance-info-switch');
         if (instanceInfoSwitchChecked) {
           instanceInfoSwitch.setAttribute('checked', true);
         } else {
           instanceInfoSwitch.removeAttribute('checked');
+        }
+      }
+      if (Object.keys(message.config).includes('schemeSwitchChecked')) {
+        let schemeSwitchChecked = message.config.schemeSwitchChecked;
+        if (schemeSwitchChecked) {
+          targetScheme = 'http:';
+        } else {
+          targetScheme = 'https:';
+        }
+        let schemeSwitch = document.getElementById('scheme-switch');
+        if (schemeSwitchChecked) {
+          schemeSwitch.setAttribute('checked', true);
+        } else {
+          schemeSwitch.removeAttribute('checked');
         }
       }
       polling();
@@ -72,6 +90,10 @@ function setLocale() {
   } {
     let dom = document.getElementById('instance-info-switch-description');
     let message = getBrowser().i18n.getMessage('instanceInfoSwitch');
+    dom.appendChild(document.createTextNode(message));
+  } {
+    let dom = document.getElementById('scheme-switch-description');
+    let message = getBrowser().i18n.getMessage('schemeSwitch');
     dom.appendChild(document.createTextNode(message));
   }
 }
@@ -112,11 +134,6 @@ function requestStreaming(newDomain, access_token) {
 }
 
 // requestStreaming();
-
-let targetScheme = 'https:';
-// targetScheme = '';
-// targetScheme = 'http:';
-// targetScheme = 'https:';
 
 let domains = [
   'mastodon.social',
@@ -167,10 +184,22 @@ document
   .getElementById('polling-form')
   .addEventListener('submit', updateMillisecondsPolling, false);
 
-function saveConfig(evt) {
-  register(evt);
-  updateMillisecondsPolling(evt);
+let targetScheme = 'https:';
 
+function changeScheme(evt) {
+  let schemeSwitchChecked = document.getElementById('scheme-switch').checked;
+  if (schemeSwitchChecked) {
+    targetScheme = 'http:';
+  } else {
+    targetScheme = 'https:';
+  }
+}
+
+document
+  .getElementById('scheme-switch')
+  .addEventListener('change', changeScheme, false);
+
+function saveConfig(evt) {
   let languagesUnchecked = [];
   for (let language of languages) {
     let checkbox = document.getElementById('checkbox-' + language);
@@ -180,13 +209,19 @@ function saveConfig(evt) {
     languagesUnchecked.push(language);
   }
   let instanceInfoSwitchChecked = document.getElementById('instance-info-switch').checked;
+  let schemeSwitchChecked = document.getElementById('scheme-switch').checked;
+  register(evt);
+  updateMillisecondsPolling(evt);
+  changeScheme(evt);
+
   runtimeSendMessage({
     popup: true,
     config: {
       domains: domains,
       millisecondsPolling: millisecondsPolling,
       languagesUnchecked: languagesUnchecked,
-      instanceInfoSwitchChecked: instanceInfoSwitchChecked
+      instanceInfoSwitchChecked: instanceInfoSwitchChecked,
+      schemeSwitchChecked: schemeSwitchChecked,
     }
   }).then((message) => {
     console.log(JSON.stringify(message, null, 1));
