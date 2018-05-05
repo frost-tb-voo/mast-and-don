@@ -1,32 +1,24 @@
 {
   "extensionName": {
     "message": "Masto and DON",
-    "description": "Name of the extension."
+    "description": "Description of the title."
   },
 
   "extensionDescription": {
-    "message": "You can know Mastodon notifications without opening many tabs.",
+    "message": "This plugin provides a toot viewer.",
     "description": "Description of the add-on."
   },
 
-  "contextMenuItemSelectionLogger": {
-    "message": "Log '%s' to the browser console",
-    "description": "Title of context menu item that logs the selected text when clicked."
+  "instanceInfoSwitch": {
+    "message": "Get information for each instance",
+    "description": "Description of the button."
   },
-
-  "notificationTitle": {
-    "message": "Alert notification",
-    "description": "Title of the click notification."
+  "pollingText": {
+    "message": "Polling per the minutes. No update with 0 value.",
+    "description": "Description of the button."
   },
-
-  "notificationContent": {
-    "message": "Caution! $URL$.",
-    "description": "Tells the user error occurred",
-    "placeholders": {
-      "url" : {
-        "content" : "$1",
-        "example" : "alert message"
-      }
-    }
+  "registerText": {
+    "message": "Add new instance into selection list",
+    "description": "Description of the button."
   }
 }

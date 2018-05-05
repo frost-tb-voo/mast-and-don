@@ -24,6 +24,12 @@
     "browser_style": true
   },
 
+  "browser_action": {
+    "default_icon": "icons/mastoandon-32.png",
+    "default_title": "Masto and DON",
+    "browser_style": true
+  },
+
   "permissions": [
     "storage",
     "webRequest",
