@@ -1,32 +1,24 @@
 {
   "extensionName": {
     "message": "Masto and DON",
-    "description": "Name of the extension."
+    "description": "Description of the title."
   },
 
   "extensionDescription": {
-    "message": "タブを開かずにマストドンの通知を知ることができるアドオンです. 使い方は Screenshot をご覧ください.",
+    "message": "This plugin provides a toot viewer.",
     "description": "Description of the add-on."
   },
 
-  "contextMenuItemSelectionLogger": {
-    "message": "Log '%s' to the browser console",
-    "description": "Title of context menu item that logs the selected text when clicked."
+  "instanceInfoSwitch": {
+    "message": "インスタンス名と壁紙を取得",
+    "description": "Description of the button."
   },
-
-  "notificationTitle": {
-    "message": "Alert notification",
-    "description": "Title of the click notification."
+  "pollingText": {
+    "message": "分ごとに更新します. 0 なら更新なし",
+    "description": "Description of the button."
   },
-
-  "notificationContent": {
-    "message": "Caution! $URL$.",
-    "description": "Tells the user error occurred",
-    "placeholders": {
-      "url" : {
-        "content" : "$1",
-        "example" : "alert message"
-      }
-    }
+  "registerText": {
+    "message": "インスタンスを追加します",
+    "description": "Description of the button."
   }
 }
