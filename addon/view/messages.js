@@ -254,7 +254,7 @@ async function requestTimelinesApi() {
       let data = await response.json();
 
       for (let toot of data) {
-        let url = toot.url.replace(/users\/(.+)\/statuses/, '@$1');
+        let url = toot.url.replace(/users\/(.+)\/(.+)/, '@$1');
         if (Object.keys(toots_domain).includes(url)) {
           continue;
         }
